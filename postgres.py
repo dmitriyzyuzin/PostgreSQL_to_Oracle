@@ -8,10 +8,10 @@ class PostgresExport:
     def __init__(self, host, user, password, dbname):
         try:
             conn = psycopg2.connect(
-                host='localhost',
-                user=postgresql_credentials['username'],
-                password=postgresql_credentials['password'],
-                dbname='9sem_bd_lab1'
+                host=host,
+                user=user,
+                password=password,
+                dbname=dbname
             )
 
             self.cursor = conn.cursor()
@@ -34,19 +34,21 @@ class PostgresExport:
     def get_table_description(self, tablename):
         sql = "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = %s"
         self.cursor.execute(sql, (tablename,))
-        colunns = self.cursor.fetchall()
-        if len(colunns) > 0:
-            return colunns
+        columns = self.cursor.fetchall()
+        if len(columns) > 0:
+            return columns
         else:
             return None
 
+    def get_table_rows(self, tablename):
+        sql = "SELECT * FROM " + str(tablename)
+        self.cursor.execute(sql)
+        rows = self.cursor.fetchall()
 
-
-postgres = PostgresExport('localhost', postgresql_credentials['username'],
-                          postgresql_credentials['password'], '9sem_bd_lab1')
-
-postgres.get_table_description('account_type')
-
+        if len(rows) > 0:
+            return rows
+        else:
+            return None
 
 
 

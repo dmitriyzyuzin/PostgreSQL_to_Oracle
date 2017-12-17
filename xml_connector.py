@@ -1,6 +1,10 @@
 #!/usr/bin/python3
 
 import xml.etree.ElementTree as ET
+from xml.dom.minidom import Node, parse
+
+from database_credentials import postgresql_credentials
+from postgres import PostgresExport
 
 
 class ExportXml:
@@ -12,21 +16,55 @@ class ExportXml:
 
         self.tables = ET.SubElement(self.top, 'tables')
 
-    def fillInTableBlock(self, tablename):
+    def convert_tuple_to_string_data(self, tuple):
+        string_data = ''
+        for item in tuple:
+            string_data += str(item) + ','
+        return string_data
+
+    def fill_in_table_block(self, tablename, columns_descr, rows_data):
         table = ET.SubElement(self.tables, 'table')
         table_name = ET.SubElement(table, 'table_name')
         table_name.text = str(tablename)
 
+        # creating columns block
         columns = ET.SubElement(table, 'columns')
-        for i in range(5):
+        for item in columns_descr:
             column = ET.SubElement(columns, 'column')
             column_name = ET.SubElement(column, 'column_name')
-            column_name.text = 'column_name{}'.format(str(i))
+            column_name.text = str(item[0])
+
+            data_type = ET.SubElement(column, 'data_type')
+            data_type.text = str(item[1])
+            is_nullable = ET.SubElement(column, 'is_nullable')
+            is_nullable.text = str(item[2])
+
+        # backup data from rows
+        rows_elem = ET.SubElement(table, 'rows')
+        for item in rows_data:
+            row_elem = ET.SubElement(rows_elem, 'row')
+            row_elem.text = self.convert_tuple_to_string_data(item)
 
 
-exporter = ExportXml('test_db')
-exporter.fillInTableBlock('table1')
-print(ET.tostring(exporter.top))
+# get data from postgres begin
+postgres = PostgresExport('localhost', postgresql_credentials['username'],
+                          postgresql_credentials['password'], '9sem_bd_lab1')
+tables_list = postgres.get_tables()
+rows_data = postgres.get_table_rows(tables_list[5])
+columns_list = postgres.get_table_description(tables_list[5])
+# get data from postgres end
 
+# making xml begin
+exporter = ExportXml('9sem_bd_lab1')
+exporter.fill_in_table_block(tables_list[5], columns_list, rows_data)
 
-# ET.ElementTree(top).write('test.xml', xml_declaration=True, encoding='utf-8', method="xml")
+# save TODO: make saving pretty xml only with one xml-library
+ET.ElementTree(exporter.top).write('postgres.xml', xml_declaration=True, encoding='utf-8', method="xml")
+
+dom = parse('postgres.xml')
+test = dom.toprettyxml()
+
+with open('postgres.xml', 'w') as file:
+    file.write(test)
+
+# making xml end
