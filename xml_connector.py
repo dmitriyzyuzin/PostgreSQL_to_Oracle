@@ -20,20 +20,57 @@ class ExportXml:
     def convert_tuple_to_string_data(tuple):
         string_data = ''
         for item in tuple:
-            string_data += str(item) + ','
-        return string_data[:-1]
+            string_data += str(item) + '--DeLiMeTeR--'
+        return string_data[:-13]
 
-    def fill_in_table_block(self, tablename, columns_descr, rows_data):
+    def fill_in_table_block(self, tablename, columns_descr, primary_key, foreign_keys, rows_data):
         table = ET.SubElement(self.tables, 'table')
         table_name = ET.SubElement(table, 'table_name')
         table_name.text = str(tablename)
+
+        # lists for FK
+        fk_column_name = []
+        fk_foreign_column = []
+        fk_foreign_table = []
+        if foreign_keys is not None:
+            for _tuple in foreign_keys:
+                fk_column_name.append(_tuple.column)
+                fk_foreign_column.append(_tuple.foreign_column)
+                fk_foreign_table.append(_tuple.foreign_table)
 
         # creating columns block
         columns = ET.SubElement(table, 'columns')
         for item in columns_descr:
             column = ET.SubElement(columns, 'column')
-            column_name = ET.SubElement(column, 'column_name')
-            column_name.text = str(item[0])
+            column_name = str(item[0])
+            column_name_elem = ET.SubElement(column, 'column_name')
+            column_name_elem.text = str(column_name)
+
+            # PK tag
+            pk_elem = ET.SubElement(column, 'primary_key')
+            if column_name == primary_key:
+                pk_elem.text = 'YES'
+            else:
+                pk_elem.text = 'NO'
+
+            """
+            FK block. Will be
+            <foreign_key>NO</foreign_key>
+            or
+            <foreign_key>
+            ____<foreign_column></foreign_column>
+            ____<foreign_table></foreign_table>
+            </foreign_key>
+            """
+            fk_elem = ET.SubElement(column, 'foreign_key')
+            if column_name in fk_column_name:
+                index_in_fk_tables = fk_column_name.index(column_name)
+                foreign_column_elem = ET.SubElement(fk_elem, 'foreign_column')
+                foreign_column_elem.text = fk_foreign_column[index_in_fk_tables]
+                foreign_table_elem = ET.SubElement(fk_elem, 'foreign_table')
+                foreign_table_elem.text = fk_foreign_table[index_in_fk_tables]
+            else:
+                fk_elem.text = 'NO'
 
             data_type = ET.SubElement(column, 'data_type')
             data_type.text = str(item[1])
@@ -54,10 +91,12 @@ postgres = PostgresExport('localhost', postgresql_credentials['username'],
                           postgresql_credentials['password'], '9sem_bd_lab1')
 tables_list = postgres.get_tables()
 for table in tables_list:
-    columns = postgres.get_table_description(table)
+    columns = postgres.get_columns_description(table)
+    primary_key = postgres.get_primary_key(table)
+    foreign_keys = postgres.get_foreign_keys(table)
     rows_data = postgres.get_table_rows(table)
 
-    exporter.fill_in_table_block(table, columns, rows_data)
+    exporter.fill_in_table_block(table, columns, primary_key, foreign_keys, rows_data)
 # get data from postgres end
 
 
