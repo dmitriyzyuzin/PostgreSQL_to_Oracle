@@ -125,7 +125,7 @@ class ImportXml:
 
     def get_create_table_sql(self, table_elem):
         table_name = table_elem.find('table_name').text
-        sql = 'create table {0} ('.format(table_name)
+        sql = 'create table \"{0}\" ('.format(table_name)
         fk = ''
 
         _columns_elem = table_elem.find('columns')
@@ -145,7 +145,7 @@ class ImportXml:
                 foreign_column = foreign_key.find('foreign_column').text
                 foreign_table = foreign_key.find('foreign_table').text
 
-                fk += 'foreign key ("{0}") references {1}("{2}"),'.format(column_name, foreign_table, foreign_column)
+                fk += 'foreign key ("{0}") references \"{1}\"("{2}"),'.format(column_name, foreign_table, foreign_column)
 
             sql += '"{0}" {1}'.format(column_name, str(self.get_datatype(data_type)))
             if is_pk == 'YES':
@@ -166,14 +166,20 @@ class ImportXml:
         _rows_elem = table_elem.find('rows')
         rows = _rows_elem.findall('row')
 
+        if table_name == 'session':
+            abc = 13
+
         for row in rows:
-            sql = 'insert into {0} values ('.format(table_name)
+            sql = 'insert into \"{0}\" values ('.format(table_name)
 
             values = row.text.split('--DeLiMeTeR--')
             i = 0
             for value in values:
                 if data_types[i] == 'int' or data_types[i] == 'numeric' or data_types[i] == 'integer':
                     sql += "{0},".format(value)
+                elif data_types[i] == 'timestamp without time zone':
+                    sql += "TO_TIMESTAMP(\'{0}\'," \
+                           " \'YYYY-MM-DD HH24:MI:SS\'),".format(value)
                 else:
                     sql += "'{0}',".format(value)
 
