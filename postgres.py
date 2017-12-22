@@ -1,10 +1,7 @@
 #!/usr/bin/python3
 
 from collections import OrderedDict, namedtuple
-
 import psycopg2
-# TODO: remove after all tests
-from database_credentials import postgresql_credentials
 
 CONSTRAINT_SCHEMA = 'public'
 
