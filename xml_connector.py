@@ -16,8 +16,6 @@ class ExportXml:
         # self.database = ET.SubElement(self.top, 'database')
         # self.database.text = str(dbname)
 
-        self.tables = ET.SubElement(self.top, 'tables')
-
     @staticmethod
     def convert_tuple_to_string_data(tuple):
         string_data = ''
@@ -165,9 +163,6 @@ class ImportXml:
 
         _rows_elem = table_elem.find('rows')
         rows = _rows_elem.findall('row')
-
-        if table_name == 'session':
-            abc = 13
 
         for row in rows:
             sql = 'insert into \"{0}\" values ('.format(table_name)
